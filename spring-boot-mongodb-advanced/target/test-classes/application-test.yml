@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: spring-boot-mongodb-advanced-test
+  data:
+    mongodb:
+      auto-index-creation: true
+      field-naming-strategy: org.springframework.data.mapping.model.SnakeCaseFieldNamingStrategy
+
+app:
+  mongodb:
+    change-stream:
+      enabled: false # Disabled during standard unit/integration tests to avoid thread contention
+
+logging:
+  level:
+    root: WARN
+    com.enterprise.mongodb: INFO
+    org.testcontainers: INFO

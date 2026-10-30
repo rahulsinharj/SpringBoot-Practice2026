@@ -1,0 +1,15 @@
+package com.enterprise.mongodb.repository;
+
+import com.enterprise.mongodb.domain.model.Customer;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface CustomerRepository extends MongoRepository<Customer, String> {
+
+    Optional<Customer> findByCustomerNumber(String customerNumber);
+
+    Optional<Customer> findByEmail(String email);
+}

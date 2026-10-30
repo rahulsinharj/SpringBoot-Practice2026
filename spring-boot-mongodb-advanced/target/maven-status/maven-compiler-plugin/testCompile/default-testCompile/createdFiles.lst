@@ -1,0 +1,7 @@
+com\enterprise\mongodb\BaseMongoIntegrationTest.class
+com\enterprise\mongodb\unit\AnalyticsServiceTest.class
+com\enterprise\mongodb\TransactionAndLockingIT.class
+com\enterprise\mongodb\unit\AccountTransferServiceTest.class
+com\enterprise\mongodb\unit\MoneyTest.class
+com\enterprise\mongodb\PolymorphicEventRepositoryIT.class
+com\enterprise\mongodb\ComplexAggregationIT.class

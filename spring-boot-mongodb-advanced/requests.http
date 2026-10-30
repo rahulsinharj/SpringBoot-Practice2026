@@ -1,0 +1,107 @@
+### ==============================================================================
+### Enterprise Spring Boot MongoDB - REST API Verification Suite
+### ==============================================================================
+
+@baseUrl = http://localhost:8080/api/v1
+
+### 1. Create Source Account (Alice)
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+  "accountNumber": "ACC-ALICE-100",
+  "customerId": "CUST-ALICE-01",
+  "initialDeposit": 1000.00,
+  "currency": "USD"
+}
+
+### 2. Create Destination Account (Bob)
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+  "accountNumber": "ACC-BOB-200",
+  "customerId": "CUST-BOB-02",
+  "initialDeposit": 250.00,
+  "currency": "USD"
+}
+
+### 3. Fetch Alice's Account
+GET {{baseUrl}}/accounts/ACC-ALICE-100
+Accept: application/json
+
+### 4. Execute Atomic Multi-Document Transactional Transfer
+# Debits ACC-ALICE-100, Credits ACC-BOB-200, creates 2 dual-entry ledger records
+POST {{baseUrl}}/accounts/transfer
+Content-Type: application/json
+
+{
+  "fromAccountNumber": "ACC-ALICE-100",
+  "toAccountNumber": "ACC-BOB-200",
+  "amount": 350.00,
+  "currency": "USD",
+  "description": "Enterprise consulting milestone #1 payment"
+}
+
+### 5. Test Optimistic Locking Conflict Simulation
+# Simulates passing a stale version (e.g. version 0 when db is version 1)
+# Returns HTTP 409 CONFLICT with CONCURRENT_MODIFICATION_CONFLICT
+POST {{baseUrl}}/accounts/ACC-ALICE-100/simulate-concurrency?amountDelta=50.00&staleVersion=0
+Accept: application/json
+
+### 6. Create Polymorphic PaymentEvent
+# Stored in 'domain_events' with _class="PAYMENT" and 30-day TTL expiry
+POST {{baseUrl}}/events
+Content-Type: application/json
+
+{
+  "_type": "PAYMENT",
+  "eventId": "EVT-PAY-8801",
+  "aggregateId": "ACC-ALICE-100",
+  "aggregateType": "ACCOUNT",
+  "amount": {
+    "amount": "350.00",
+    "currency": "USD"
+  },
+  "paymentMethod": "ACH_DIRECT",
+  "status": "SETTLED",
+  "transactionReference": "TX-REF-100982",
+  "customerId": "CUST-ALICE-01"
+}
+
+### 7. Create Polymorphic UserActivityEvent
+# Stored in 'domain_events' with _class="USER_ACTIVITY"
+POST {{baseUrl}}/events
+Content-Type: application/json
+
+{
+  "_type": "USER_ACTIVITY",
+  "eventId": "EVT-ACT-9902",
+  "aggregateId": "ACC-ALICE-100",
+  "aggregateType": "ACCOUNT",
+  "userId": "USR-ALICE",
+  "actionType": "TRANSFER_AUTHORIZED_MFA",
+  "ipAddress": "203.0.113.195",
+  "userAgent": "Mozilla/5.0 Enterprise Client",
+  "metadata": {
+    "authMethod": "FIDO2_WEBAUTHN",
+    "deviceRiskScore": "LOW"
+  }
+}
+
+### 8. Fetch Polymorphic Events for Aggregate
+GET {{baseUrl}}/events/aggregate/ACC-ALICE-100
+Accept: application/json
+
+### 9. Query Payment Events specifically by Customer
+GET {{baseUrl}}/events/payments/customer/CUST-ALICE-01
+Accept: application/json
+
+### 10. Execute Complex Aggregation Pipeline
+# Aggregates $match, $lookup (join with customers), $unwind, $group, $project, $sort
+GET {{baseUrl}}/analytics/top-spenders?limit=5
+Accept: application/json
+
+### 11. Health & Operational Metrics (Spring Boot Actuator)
+GET http://localhost:8080/actuator/health
+Accept: application/json
